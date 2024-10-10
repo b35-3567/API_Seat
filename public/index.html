@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Booking</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .seat {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            display: inline-block;
+            background-color: #ccc;
+            cursor: pointer;
+        }
+        .booked {
+            background-color: yellow;
+        }
+        .taken {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select Your Seat</h1>
+    <div id="seats"></div>
+
+    <script>
+        const socket = io();
+        const seatsDiv = document.getElementById('seats');
+
+        // Lấy danh sách ghế từ server
+        fetch('/api/seats')
+            .then(response => response.json())
+            .then(seats => {
+                seats.forEach(seat => {
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat';
+                    seatDiv.dataset.id = seat._id;
+                    seatDiv.innerText = seat.number;
+
+                    // Nếu ghế đã được đặt, thêm class 'booked'
+                    if (seat.isBooked) {
+                        seatDiv.classList.add('booked');
+                    }
+
+                    // Thêm sự kiện click để đặt ghế
+                    seatDiv.onclick = () => {
+                        if (!seat.isBooked) {
+                            socket.emit('book_seat', seat._id);
+                        } else {
+                            alert('Ghế này đã được đặt!');
+                        }
+                    };
+
+                    seatsDiv.appendChild(seatDiv);
+                });
+            });
+
+        // Lắng nghe sự kiện ghế đã được đặt
+        socket.on('seat_booked', (seatId) => {
+            const seatDiv = document.querySelector(`[data-id="${seatId}"]`);
+            if (seatDiv) {
+                seatDiv.classList.add('booked');
+            }
+        });
+    </script>
+</body>
+</html>
